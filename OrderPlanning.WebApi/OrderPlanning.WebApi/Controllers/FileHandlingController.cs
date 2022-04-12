@@ -30,8 +30,9 @@ namespace OrderPlanning.WebApi.Controllers
                 _context.Orders.Add(order);
             }
 
+            _context.SaveChanges();
 
-            return Ok();
+            return Ok(orders);
         }
 
 
