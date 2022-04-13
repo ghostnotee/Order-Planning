@@ -14,4 +14,6 @@ Kullanılan teknolojiler:
 
 → Sipariş adedi MOQ’ya eşit yada büyükse yeni bir kayıt oluşturuldu.
 
-→ Oluşturulan liste yine ClosedXML ile excel oluşturulup export edildi.
+→ Oluşturulan liste yine ClosedXML ile excel oluşturulup export edildi. 
+
+→ Ana dizin içerisinde dosya yolu belirtilerek apiden yanıt dönülüyor.
