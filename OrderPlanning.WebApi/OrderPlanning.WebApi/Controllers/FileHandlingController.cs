@@ -1,4 +1,5 @@
 using System.Data;
+using System.Linq;
 using ClosedXML.Excel;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
@@ -35,39 +36,63 @@ namespace OrderPlanning.WebApi.Controllers
             return Ok(orders);
         }
 
+        [HttpGet]
+        public IActionResult EditOrderList()
+        {
+            List<Order> fixedList = new();
+            var orders = _context.Orders.AsQueryable();
+            foreach (var order in orders)
+            {
+                var result = fixedList.LastOrDefault(fo => fo.ID == order.ID);
+                if (result is null || result.Amount >= result.MOQ)
+                    fixedList.Add(order);
+                else
+                {
+                    result.Amount += order.Amount;
+                }
+            }
+
+            using var ms = new MemoryStream();
+            var workbook = new XLWorkbook();
+            var dataSet = new DataSet();
+
+            return Ok(fixedList);
+        }
+
 
         private static DataTable ReadExcelFile(IFormFile file)
         {
             var dataTable = new DataTable();
-            using (var ms = new MemoryStream())
+            using var ms = new MemoryStream();
+
+            file.CopyTo(ms);
+
+            using (var workbook = new XLWorkbook(ms))
             {
-                file.CopyTo(ms);
+                var worksheet = workbook.Worksheet(1);
+                var columnSum = worksheet.LastColumnUsed().ColumnNumber();
+                var rowSum = worksheet.LastRowUsed().RowNumber();
 
-                using (var workbook = new XLWorkbook(ms))
+                for (int i = 1; i <= columnSum; i++)
                 {
-                    var worksheet = workbook.Worksheet(1);
-                    var columnSum = worksheet.LastColumnUsed().ColumnNumber();
-                    var rowSum = worksheet.LastRowUsed().RowNumber();
+                    dataTable.Columns.Add(worksheet.Cell(1, i).Value.ToString());
+                }
 
-                    for (int i = 1; i <= columnSum; i++)
+                for (int i = 2; i <= rowSum; i++)
+                {
+                    var dataRow = dataTable.NewRow();
+                    for (int j = 1; j <= columnSum; j++)
                     {
-                        dataTable.Columns.Add(worksheet.Cell(1, i).Value.ToString());
+                        dataRow[j - 1] = worksheet.Cell(i, j).Value;
                     }
 
-                    for (int i = 2; i <= rowSum; i++)
-                    {
-                        var dataRow = dataTable.NewRow();
-                        for (int j = 1; j <= columnSum; j++)
-                        {
-                            dataRow[j - 1] = worksheet.Cell(i, j).Value;
-                        }
-
-                        dataTable.Rows.Add(dataRow);
-                    }
+                    dataTable.Rows.Add(dataRow);
                 }
             }
 
             return (dataTable);
         }
+        
+        
     }
 }
