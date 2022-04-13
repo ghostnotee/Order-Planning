@@ -1,5 +1,7 @@
+using System.ComponentModel;
 using System.Data;
 using System.Linq;
+using System.Reflection;
 using ClosedXML.Excel;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
@@ -54,9 +56,16 @@ namespace OrderPlanning.WebApi.Controllers
 
             using var ms = new MemoryStream();
             var workbook = new XLWorkbook();
-            var dataSet = new DataSet();
+            var dataTable = ToDataTable(fixedList);
+            workbook.Worksheets.Add(dataTable,"Orders");
+           
+            
+            Directory.CreateDirectory(Path.Combine(Environment.CurrentDirectory, "Storage"));
+            var path = Path.Combine(Directory.GetCurrentDirectory(), "Storage","FixedOrdersList.xlsx");
+            
+            workbook.SaveAs(path);
 
-            return Ok(fixedList);
+            return Ok($"Dosya yolu : {path}");
         }
 
 
@@ -92,7 +101,28 @@ namespace OrderPlanning.WebApi.Controllers
 
             return (dataTable);
         }
-        
-        
+
+        private static DataTable ToDataTable(List<Order> orderList)
+        {
+            DataTable dataTable = new DataTable(typeof(Order).Name);
+            PropertyInfo[] properties = typeof(Order).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            foreach (PropertyInfo prop in properties)
+            {
+                dataTable.Columns.Add(prop.Name);
+            }
+
+            foreach (Order order in orderList)
+            {
+                var values = new object[properties.Length];
+                for (int i = 0; i < properties.Length; i++)
+                {
+                    values[i] = properties[i].GetValue(order, null);
+                }
+
+                dataTable.Rows.Add(values);
+            }
+
+            return dataTable;
+        }
     }
 }
