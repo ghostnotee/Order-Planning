@@ -1,4 +1,4 @@
-# Exel dosyası düzenleme:
+# Excel dosyası düzenleme:
 
 Kullanılan teknolojiler:
 
